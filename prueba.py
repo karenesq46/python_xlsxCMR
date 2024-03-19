@@ -16,7 +16,7 @@ def procesar_archivo():
         # Ruta del archivo de texto original y del archivo de salida modificado
         ruta_archivo_txt_original=ruta_archivo
         ruta_archivo_txt_modificado = 'archivo_modificado.txt'
-        ruta_archivo_excel_modificado = 'archivo_modificado_final_con_delimitadores.xlsx'
+        ruta_archivo_excel_modificado = 'excel_final.xlsx'
 
         # Leer el contenido del archivo de texto original
         with open(ruta_archivo_txt_original, 'r', encoding='utf-8') as archivo_txt:
@@ -37,10 +37,12 @@ def procesar_archivo():
         # 1. Eliminar texto de títulos y juntas
         buscar_reemplazar_titulos = [
             ("PROCESO ELECTORAL CONCURRENTE 2023-2024", ""),
+            ("PROCESO ELECTORAL 2023-2024", " "),
             ("CÉDULA DE INFORMACIÓN CRyT ITINERANTE", ""),
             ("MAPA DE LA RUTA PREFERENTE", ""),
             ("MUNICIPIO:", "MUNICIPIO"),
             ("\nB)", "B)"),
+            ("\n B)", "B)"),
             ("km.", "km"),
             ("Ayuntamientos: ", "Ayuntamientos"),
             (":", " "),
@@ -112,7 +114,7 @@ def procesar_archivo():
             "* Esta es una ruta sugerida que podría modificarse de acuerdo a la conclusión del escrutinio y cómputo de las casillas que la comprenden.",
             "* Esta es una ruta sugerida que podría modificarse de acuerdo con la conclusión del escrutinio y cómputo de las casillas que la comprenden.",
             "**Las Representaciones de los Partidos Políticos o Candidaturas Independientes podrán acompañar y vigilar, por sus propios medios, el recorrido del mecanismo de recolección hasta la entrega de los paquetes electorales a la sede del consejo correspondiente. (Artículo 334, párrafo 1, inciso e), Reglamento de Elecciones).",
-            "** Las Representaciones de los Partidos Políticos o Candidaturas Independientes podrán acompañar y vigilar, por sus propios medios, el recorrido del mecanismo de recolección hasta la entrega de los paquetes electorales a la sede del consejo correspondiente. (Artículo 334, párrafo 1, inciso e), Reglamento de Elecciones). PROCESO ELECTORAL 2023-2024"]
+            "** Las Representaciones de los Partidos Políticos o Candidaturas Independientes podrán acompañar y vigilar, por sus propios medios, el recorrido del mecanismo de recolección hasta la entrega de los paquetes electorales a la sede del consejo correspondiente. (Artículo 334, párrafo 1, inciso e), Reglamento de Elecciones)."]
 
         for nota in notas_a_eliminar:
             contenido_txt = contenido_txt.replace(nota, "")
@@ -139,13 +141,13 @@ def procesar_archivo():
         contenido_txt = contenido_txt.replace(" ", ">")
 
         # Guardar el contenido modificado en un nuevo archivo
-        with open('archivo_modificado_final.txt', 'w', encoding='utf-8') as archivo_salida:
+        with open('archivo_modificado_.txt', 'w', encoding='utf-8') as archivo_salida:
             archivo_salida.write(contenido_txt)
 
         import pandas as pd
 
         # Leer el contenido modificado del archivo de texto
-        ruta_archivo_txt = 'archivo_modificado_final.txt'
+        ruta_archivo_txt = 'archivo_modificado_.txt'
 
         with open(ruta_archivo_txt, 'r', encoding='utf-8') as archivo_txt:
             contenido_txt = archivo_txt.read()
@@ -179,7 +181,7 @@ def procesar_archivo():
         df = pd.DataFrame({'Columna 1': columna_1, 'Columna 2': columna_2})
 
         # Guardar el DataFrame en un archivo Excel
-        ruta_archivo_excel = 'archivo_modificado_final.xlsx'
+        ruta_archivo_excel = 'archivo_modificado_.xlsx'
         df.to_excel(ruta_archivo_excel, index=False)
 
         # El archivo Excel se guarda, y ahora puedes abrirlo en Excel
@@ -206,11 +208,12 @@ def procesar_archivo():
             "Local: Ayuntamiento",
             "Local: Ayuntamientos",
             "Local: Diputación",
-            "No aplica"
+            "No aplica",
+            "PAQUETES POR TIPO DE ELECCIÓN"
         ]
 
         # Ruta del archivo Excel
-        ruta_archivo_excel = 'archivo_modificado_final.xlsx'
+        ruta_archivo_excel = 'archivo_modificado_.xlsx'
 
         # Cargar el libro de trabajo de Excel
         wb = load_workbook(filename=ruta_archivo_excel)
@@ -243,10 +246,23 @@ def procesar_archivo():
                     regex = re.compile(rf'(?i)(\b{re.escape(texto)}\b)')
                     # Reemplazar el texto encontrado con el mismo texto precedido y seguido por ">"
                     contenido_celda = regex.sub(r'>\1>', contenido_celda)
-                
+
+                # Agregar ">" antes de "ARE" si hay un número antes de "ARE"
+                contenido_celda = re.sub(r'(\b\d+\b)\s+ARE\s+(\d+\b)', r'\1 > ARE \2', contenido_celda)
+        
+        
                 # Agregar ">" antes y después del número de paquetes
                 contenido_celda = re.sub(r'(\d+)\s+(PAQUETES)', r'>\1 PAQUETES >', contenido_celda)
-                
+
+                # Buscar " PAQUETES POR >TIPO DE ELECCIÓN>" y reemplazar por " PAQUETES POR TIPO DE ELECCIÓN>"
+                contenido_celda = contenido_celda.replace(" PAQUETES POR >TIPO DE ELECCIÓN>", " PAQUETES POR TIPO DE ELECCIÓN>")
+        
+                """contenido_celda = re.sub(r'(\b[Ff]ederal \d+),', r'\1 >', contenido_celda)
+                contenido_celda = re.sub(r'(\b[Ll]ocal) (\d+)', r'\1 > \2', contenido_celda)"""
+                # Buscar "CD" y agregar ">" antes de "CD"
+                contenido_celda = re.sub(r'\bMéxico\.\s*(CD\d+)\b', r'México. >\1', contenido_celda)
+
+
                 # Agregar ", México" al final del texto
                 contenido_celda = contenido_celda.replace(" , México", "> , México")
 
@@ -255,9 +271,18 @@ def procesar_archivo():
                 
                 # Eliminar ">" antes de "B)"
                 contenido_celda = re.sub(r'>\s*(\nB\))', r'\1', contenido_celda)
+                # Eliminar ">" antes de "\nb)"
+                contenido_celda = re.sub(r'>\s*(\n b\))', r'\1', contenido_celda)
+
 
                 # Agregar ">" después de "km", pero no si está seguido por "B)"
                 contenido_celda = re.sub(r'(?<!B\))(\bkm\b)', r'\1 >', contenido_celda)
+
+                # Agregar ">" después de "km", pero no si está seguido por "\nB)"
+                contenido_celda = re.sub(r'(?<!\n B\))(\bkm\b)', r'\1 >', contenido_celda)
+
+                # Buscar "N Casillas" y agregar ">" antes del número, considerando mayúsculas y minúsculas
+                contenido_celda = re.sub(r'(\b\d\s*[Cc]asillas\b)', r'>\1', contenido_celda)
 
                 # Reemplazar al final de la cadena
                 for old, new in [("^IZORE:", "ZORE"), ("ZOR:E", "ZORE"), ("^IZORE", "ZORE")]:
@@ -269,12 +294,7 @@ def procesar_archivo():
                 cell.value = contenido_celda
 
         # Guardar el libro de trabajo de Excel modificado
-        wb.save(filename='archivo_modificado_final_con_delimitadores.xlsx')
-
-        # Ejecutar el proceso de procesamiento de archivo aquí
-        # Agrega tu lógica de procesamiento de archivo aquí
-        # por ejemplo, el código que está en la primera celda de este archivo
-        # usa la variable ruta_archivo para cargar el archivo seleccionado
+        wb.save(filename='excel_final.xlsx')
         
         # Actualizar la interfaz con un mensaje de éxito
         lbl_estado.config(text="Archivo procesado exitosamente.")
@@ -282,13 +302,24 @@ def procesar_archivo():
         # Actualizar la interfaz con un mensaje de error
         lbl_estado.config(text="No se seleccionó ningún archivo.")
 
-# Define la función eliminar_urls e importa re aquí
+# Define la función eliminar_urls 
 def eliminar_urls(texto):
     return re.sub(r'https?://\S+', '', texto)
 
 # Crear la ventana principal
 ventana = tk.Tk()
-ventana.title("Procesador de Archivos")
+ventana.title("Cédulas de Mecanismos")
+
+
+# Crear un widget de etiqueta para mostrar las instrucciones
+instrucciones_texto = """\
+Instrucciones de uso del programa
+1. Seleccionar archivo .txt
+2. El archivo excel se guarda en la misma carpeta donde se encuentra el programa, con el nombre "excel_final.xlsx"
+3. Es importante guardar el excel después de procesar cada cédula, ya que este se reemplaza automáticamente."""
+
+etiqueta_instrucciones = tk.Label(ventana, text=instrucciones_texto, justify="left")
+etiqueta_instrucciones.pack(pady=10)
 
 # Crear un botón para seleccionar el archivo
 btn_seleccionar = tk.Button(ventana, text="Seleccionar Archivo", command=procesar_archivo)
